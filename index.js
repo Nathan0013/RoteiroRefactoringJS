@@ -7,9 +7,21 @@ function formatarMoeda(valor) {
   }).format(valor / 100);
 }
 
-function calculaTotalApresentacao(apre, peca) {
+function getPeca(pecas, apre) {
+  return pecas[apre.id];
+}
+
+function calcularCredito(pecas, apre) {
+  let creditos = 0;
+  creditos += Math.max(apre.audiencia - 30, 0);
+  if (getPeca(pecas, apre).tipo === "comedia")
+    creditos += Math.floor(apre.audiencia / 5);
+  return creditos;
+}
+
+function calcularTotalApresentacao(pecas, apre) {
   let total = 0;
-  switch (peca.tipo) {
+  switch (getPeca(pecas, apre).tipo) {
     case "tragedia":
       total = 40000;
       if (apre.audiencia > 30) {
@@ -24,48 +36,34 @@ function calculaTotalApresentacao(apre, peca) {
       total += 300 * apre.audiencia;
       break;
     default:
-      throw new Error(`Peça desconhecida: ${peca.tipo}`);
+      throw new Error(`Peça desconhecida: ${getPeca(pecas, apre).tipo}`);
   }
   return total;
 }
 
+function calcularTotalCreditos(pecas, apresentacoes) {
+  let creditos = 0;
+  for (let apre of apresentacoes) {
+    creditos += calcularCredito(pecas, apre);
+  }
+  return creditos;
+}
+
+function calcularTotalFatura(pecas, apresentacoes) {
+  let totalFatura = 0;
+  for (let apre of apresentacoes) {
+    totalFatura += calcularTotalApresentacao(pecas, apre);
+  }
+  return totalFatura;
+}
+
 function gerarFaturaStr(fatura, pecas) {
-  
-  function getPeca(apre) {
-    return pecas[apre.id];
-  }
-
-  function calcularCredito(apre) {
-    let creditos = 0;
-    creditos += Math.max(apre.audiencia - 30, 0);
-    if (getPeca(apre).tipo === "comedia")
-      creditos += Math.floor(apre.audiencia / 5);
-    return creditos;
-  }
-
-  function calcularTotalFatura() {
-    let totalFatura = 0;
-    for (let apre of fatura.apresentacoes) {
-      totalFatura += calculaTotalApresentacao(apre, getPeca(apre));
-    }
-    return totalFatura;
-  }
-
-  function calcularTotalCreditos() {
-    let creditos = 0;
-    for (let apre of fatura.apresentacoes) {
-      creditos += calcularCredito(apre);
-    }
-    return creditos;
-  }
-
-
   let faturaStr = `Fatura ${fatura.cliente}\n`;
   for (let apre of fatura.apresentacoes) {
-      faturaStr += `  ${getPeca(apre).nome}: ${formatarMoeda(calculaTotalApresentacao(apre, getPeca(apre)))} (${apre.audiencia} assentos)\n`;
+    faturaStr += `  ${getPeca(pecas, apre).nome}: ${formatarMoeda(calcularTotalApresentacao(pecas, apre))} (${apre.audiencia} assentos)\n`;
   }
-  faturaStr += `Valor total: ${formatarMoeda(calcularTotalFatura())}\n`;
-  faturaStr += `Créditos acumulados: ${calcularTotalCreditos()} \n`;
+  faturaStr += `Valor total: ${formatarMoeda(calcularTotalFatura(pecas, fatura.apresentacoes))}\n`;
+  faturaStr += `Créditos acumulados: ${calcularTotalCreditos(pecas, fatura.apresentacoes)} \n`;
   return faturaStr;
 }
 
@@ -75,3 +73,5 @@ const pecas = JSON.parse(readFileSync('./pecas.json'));
 const faturaStr = gerarFaturaStr(faturas, pecas);
 console.log(faturaStr);
 
+// Não se esqueça do commit:
+// git commit -m "Commit 5 - Move Function"
